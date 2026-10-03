@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BRO, I'M COOKED 💀 | Survive One College Class</title>
+  <meta name="description" content="A comedy browser game prototype where you must survive a 5-minute Indian college class without getting caught by the professor.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-app">
+
+    <!-- Top Minimal HUD -->
+    <header id="hud" class="hud-container hidden" role="banner">
+      <div class="hud-left">
+        <div class="hud-badge time-badge">
+          <span class="hud-icon">⏰</span>
+          <span id="hud-clock">10:35 AM</span>
+        </div>
+        <div class="hud-badge subject-badge">
+          <span class="subject-dot"></span>
+          <span class="subject-title">DATABASE SYSTEMS</span>
+        </div>
+      </div>
+
+      <div class="hud-center">
+        <!-- Suspicion Meter -->
+        <div class="suspicion-wrapper" id="suspicion-wrapper" title="Professor Suspicion">
+          <div class="suspicion-header">
+            <span class="suspicion-label">PROFESSOR SUSPICION: <strong id="suspicion-val">0%</strong></span>
+            <span id="suspicion-alert-pill" class="alert-pill hidden">⚠️ WATCHING</span>
+          </div>
+          <div class="suspicion-bar-bg">
+            <div id="suspicion-bar-fill" class="suspicion-bar-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Class Countdown Timer -->
+        <div class="countdown-card" id="countdown-card">
+          <span class="timer-label">TIME LEFT</span>
+          <span id="timer-display" class="timer-digits">05:00</span>
+        </div>
+      </div>
+
+      <div class="hud-right">
+        <!-- Compact Resource Indicators -->
+        <div class="resources-bar" role="region" aria-label="Player Resources">
+          <div class="stat-pill" id="stat-sanity" title="Sanity (Mental Focus)">
+            <span class="stat-emoji">🧠</span>
+            <span class="stat-num" id="val-sanity">100</span>
+          </div>
+          <div class="stat-pill" id="stat-energy" title="Energy (Wakefulness)">
+            <span class="stat-emoji">😴</span>
+            <span class="stat-num" id="val-energy">100</span>
+          </div>
+          <div class="stat-pill" id="stat-attendance" title="Attendance Percentage">
+            <span class="stat-emoji">📊</span>
+            <span class="stat-num" id="val-attendance">85%</span>
+          </div>
+          <div class="stat-pill" id="stat-money" title="Wallet Cash">
+            <span class="stat-emoji">💰</span>
+            <span class="stat-num" id="val-money">₹100</span>
+          </div>
+        </div>
+
+        <!-- Audio & Speed Controls -->
+        <div class="hud-tools">
+          <button id="btn-audio-toggle" class="icon-btn" title="Toggle Sound & Ambience" aria-label="Toggle Sound">
+            <span id="audio-icon">🔊</span>
+          </button>
+          <button id="btn-speed-toggle" class="speed-badge" title="Simulation Speed: Click to cycle 1x / 2x / 4x" aria-label="Simulation Speed">
+            <span id="speed-text">1x SPEED</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Professor Watching Banner (Overlay alert at 75%) -->
+    <div id="banner-watching" class="watching-banner hidden">
+      <span class="watching-icon">⚠️</span>
+      <span class="watching-text">PROFESSOR IS WATCHING YOU!</span>
+      <span class="watching-sub">STOP DOING SUSPICIOUS ACTIONS NOW!</span>
+    </div>
+
+    <!-- Main Game Scene: The Stylized Classroom -->
+    <main id="classroom-viewport" class="classroom-stage" role="main">
+      
+      <!-- Ceiling Layer: Rotating Fan with Cast Shadow -->
+      <div class="ceiling-fixtures">
+        <div class="ceiling-fan-mount">
+          <div class="fan-rod"></div>
+          <div class="fan-motor">
+            <div class="fan-blade blade-1"></div>
+            <div class="fan-blade blade-2"></div>
+            <div class="fan-blade blade-3"></div>
+          </div>
+          <div class="fan-shadow"></div>
+        </div>
+        <div class="ceiling-tube-light light-left"></div>
+        <div class="ceiling-tube-light light-right"></div>
+      </div>
+
+      <!-- Classroom Back Wall & Windows -->
+      <div class="classroom-wall">
+        <!-- Left Windows with Sunbeam and Neem Tree -->
+        <div class="window-frame">
+          <div class="window-pane">
+            <div class="outdoor-sky">
+              <div class="sun-glare"></div>
+              <div class="neem-tree">
+                <div class="leaf-cluster cluster-1"></div>
+                <div class="leaf-cluster cluster-2"></div>
+                <div class="leaf-cluster cluster-3"></div>
+              </div>
+              <div class="pigeon" id="window-pigeon" title="Campus Pigeon">
+                <div class="pigeon-body"></div>
+                <div class="pigeon-head"></div>
+                <div class="pigeon-beak"></div>
+              </div>
+            </div>
+            <div class="window-grill">
+              <span class="bar"></span>
+              <span class="bar"></span>
+              <span class="bar"></span>
+            </div>
+          </div>
+          <div class="sunbeam-ray"></div>
+        </div>
+
+        <!-- Wall Clock -->
+        <div class="wall-clock" title="Classroom Wall Clock">
+          <div class="clock-face">
+            <div class="clock-pin"></div>
+            <div class="clock-hand hand-hour" id="clock-hour"></div>
+            <div class="clock-hand hand-minute" id="clock-minute"></div>
+          </div>
+        </div>
+
+        <!-- The Big Whiteboard with Funny DBMS Lecture Notes -->
+        <div class="whiteboard-frame">
+          <div class="board-top-tag">CS-302 : RELATIONAL DATABASE SYSTEMS &middot; PROF. S. VERMA</div>
+          <div class="board-content">
+            <div class="board-column left-notes">
+              <h3 class="chalk-title">UNIT 3: NORMALIZATION</h3>
+              <p class="chalk-line">&bull; 1NF: Atomic values only</p>
+              <p class="chalk-line">&bull; 2NF: No partial functional dependency</p>
+              <p class="chalk-line highlight">&bull; 3NF: No transitive dependency (X &rarr; Y)</p>
+              <p class="chalk-line danger-note">&bull; BCNF: If A &rarr; B, A must be Superkey!</p>
+              <div class="chalk-table">
+                <div class="table-row"><span>Roll</span><span>Name</span><span>Marks</span></div>
+                <div class="table-row"><span>42</span><span>You</span><span>12/100 💀</span></div>
+              </div>
+            </div>
+            <div class="board-column right-notes">
+              <div class="erased-streak"></div>
+              <div class="chalk-diagram">
+                <div class="node node-root">DBMS</div>
+                <div class="tree-branches">
+                  <span class="node child-1">B-Tree</span>
+                  <span class="node child-2">ACID</span>
+                </div>
+              </div>
+              <div class="funny-notice">
+                <span class="stamp">INTERNAL EXAMS</span>
+                <small>"Attendance &lt; 75% = DEBARRED!"</small>
+                <div class="scribble">Sharma ji: 45 LPA Google 😭</div>
+              </div>
+            </div>
+          </div>
+          <div class="board-tray">
+            <div class="tray-duster"></div>
+            <div class="tray-marker blue-marker"></div>
+            <div class="tray-marker red-marker"></div>
+          </div>
+        </div>
+
+        <!-- Notice Board on Right Wall -->
+        <div class="notice-board">
+          <div class="pin red-pin"></div>
+          <div class="notice-paper paper-1">
+            <strong>NOTICE</strong>
+            <span>Submissions close by 5:00 PM. No excuses!</span>
+          </div>
+          <div class="notice-paper paper-2">
+            <span class="canteen-tag">CANTEEN MENU</span>
+            <span>Samosa: ₹15<br>Chai: ₹10</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Podium & Professor Zone (Midground) -->
+      <div class="front-stage">
+        <!-- Professor NPC -->
+        <div id="professor" class="professor-char state-writing" data-facing="board">
+          <!-- Speech Balloon for Professor Quips -->
+          <div id="prof-bubble" class="speech-bubble hidden">
+            <span id="prof-bubble-text">Pay attention backbenchers!</span>
+          </div>
+
+          <!-- Professor Body Visual -->
+          <div class="prof-figure">
+            <div class="prof-alert-mark hidden" id="prof-alert-mark">!</div>
+            <div class="prof-head">
+              <div class="prof-hair"></div>
+              <div class="prof-face">
+                <div class="prof-brows"></div>
+                <div class="prof-eyes">
+                  <span class="eye left-eye"></span>
+                  <span class="eye right-eye"></span>
+                </div>
+                <div class="prof-glasses"></div>
+                <div class="prof-mouth"></div>
+                <div class="prof-mustache"></div>
+              </div>
+            </div>
+            <div class="prof-torso">
+              <div class="prof-shirt">
+                <div class="shirt-collar"></div>
+                <div class="shirt-pocket"><div class="pen-clip"></div></div>
+              </div>
+              <div class="prof-arm arm-chalk">
+                <div class="chalk-stick"></div>
+              </div>
+              <div class="prof-arm arm-idle"></div>
+            </div>
+            <div class="prof-legs">
+              <div class="prof-leg leg-left"></div>
+              <div class="prof-leg leg-right"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Teacher's Podium Desk -->
+        <div class="podium-desk">
+          <div class="podium-top">
+            <div class="attendance-register" title="Official Attendance Register"></div>
+            <div class="water-bottle steel-bottle"></div>
+            <div class="chalk-box"></div>
+          </div>
+          <div class="podium-body">
+            <div class="podium-panel"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Student NPC Benches (Rows between teacher and player) -->
+      <div class="middle-benches">
+        
+        <!-- Row 1: The Topper (Sharma) and diligent student -->
+        <div class="bench-row front-row">
+          <div class="bench-desk">
+            <div class="desk-surface">
+              <div class="notebook-prop open-book"></div>
+              <div class="pen-prop"></div>
+            </div>
+          </div>
+          <div class="npc-student topper-npc" title="Topper Sharma (Taking rapid notes)">
+            <div class="student-head head-bobbing">
+              <div class="hair-cut"></div>
+              <div class="glasses-round"></div>
+            </div>
+            <div class="student-body shirt-striped">
+              <div class="hand-writing"></div>
+            </div>
+            <div class="status-indicator">✍️ 100% Notes</div>
+          </div>
+
+          <div class="npc-student diligent-npc" title="Attentive Student">
+            <div class="student-head">
+              <div class="ponytail"></div>
+            </div>
+            <div class="student-body shirt-green"></div>
+          </div>
+        </div>
+
+        <!-- Row 2: Backbencher Bunty (Sleeping) & Rohan (Phone user) -->
+        <div class="bench-row mid-row">
+          <div class="bench-desk">
+            <div class="desk-surface">
+              <div class="bag-strap"></div>
+            </div>
+          </div>
+          <div class="npc-student sleeping-npc" title="Bunty (Fast Asleep)">
+            <div class="sleeping-head"></div>
+            <div class="student-body folded-arms"></div>
+            <div class="zzz-container">
+              <span class="zzz z1">z</span>
+              <span class="zzz z2">Z</span>
+              <span class="zzz z3">Z</span>
+            </div>
+          </div>
+
+          <div class="npc-student phone-npc" title="Rohan (Sneaky Phone scroller)">
+            <div class="student-head head-tilted"></div>
+            <div class="student-body shirt-orange">
+              <div class="screen-glow-tiny"></div>
+            </div>
+            <div class="whisper-bubble hidden" id="npc-whisper">"Bro samosa..."</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Player Perspective: Foreground Desk -->
+      <div class="player-desk-foreground" id="player-desk">
+        
+        <!-- Player Action Visual Overlays (Typing, Sleeping, Phone, Studying) -->
+        <div class="player-character" id="player-character" data-action="idle">
+          
+          <!-- Idle / Study Pose -->
+          <div class="player-arms pose-study">
+            <div class="player-arm arm-left">
+              <div class="player-sleeve"></div>
+              <div class="player-hand"></div>
+            </div>
+            <div class="player-arm arm-right">
+              <div class="player-sleeve"></div>
+              <div class="player-hand hand-with-pen">
+                <div class="desk-pen"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Typing Pose (Look Busy) -->
+          <div class="player-arms pose-typing hidden">
+            <div class="typing-hands">
+              <div class="t-hand t-left"></div>
+              <div class="t-hand t-right"></div>
+            </div>
+          </div>
+
+          <!-- Phone Pose (Secretly Under Desk) -->
+          <div class="player-arms pose-phone hidden">
+            <div class="sneaky-phone-unit">
+              <div class="smartphone-body">
+                <div class="phone-screen-light">
+                  <div class="chat-app-mock">
+                    <span class="chat-dot"></span>
+                    <span class="chat-bar"></span>
+                  </div>
+                </div>
+              </div>
+              <div class="two-thumbs">
+                <span class="thumb thumb-left"></span>
+                <span class="thumb thumb-right"></span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sleeping Pose (Head Down) -->
+          <div class="player-arms pose-sleep hidden">
+            <div class="head-down-pillow">
+              <div class="player-hair-flat"></div>
+              <div class="player-nap-arms"></div>
+              <div class="player-zzz">
+                <span>z</span><span>Z</span><span>Z</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Desk Surface Items -->
+        <div class="desk-wood-slab">
+          <div class="desk-item spiral-notebook" id="prop-notebook">
+            <div class="notebook-cover">
+              <div class="spiral-rings"></div>
+              <div class="ruled-page">
+                <span class="doodle-star">★</span>
+                <span class="ruled-line line-1"></span>
+                <span class="ruled-line line-2"></span>
+                <span class="ruled-line line-3"></span>
+                <div class="doodle-meme">B-Tree = 🌳?</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="desk-item student-laptop" id="prop-laptop">
+            <div class="laptop-screen">
+              <div class="code-terminal" id="laptop-terminal">
+                <div class="terminal-line"><span class="cmd-prompt">&gt;</span> SELECT * FROM sanity;</div>
+                <div class="terminal-line highlight-query">0 rows returned (EMPTY)</div>
+              </div>
+            </div>
+            <div class="laptop-keyboard">
+              <div class="keys-grid"></div>
+              <div class="touchpad"></div>
+            </div>
+          </div>
+
+          <div class="desk-item college-id-card">
+            <div class="id-lanyard"></div>
+            <div class="id-badge">
+              <div class="id-photo"></div>
+              <div class="id-details">
+                <strong>ROLL 42</strong>
+                <small>CSE-B</small>
+              </div>
+            </div>
+          </div>
+
+          <!-- Subtle Action Reaction Floating Text -->
+          <div id="action-floating-fx" class="floating-fx-container"></div>
+        </div>
+
+      </div>
+
+      <!-- Classroom Live Feed / System Humor Toast -->
+      <div id="system-humor-bar" class="humor-status-bar">
+        <span class="status-dot"></span>
+        <span id="humor-message">Class has commenced. Keep your head down and stay alive.</span>
+      </div>
+
+    </main>
+
+    <!-- Bottom Controls: 4 Large Action Buttons -->
+    <nav class="action-dock" id="action-dock" aria-label="Player Actions">
+      <div class="action-grid">
+
+        <!-- Action 1: STUDY -->
+        <button id="btn-study" class="game-action-btn btn-study" aria-label="Study: Suspicion -5, Sanity -2, Energy -3">
+          <div class="btn-top">
+            <span class="btn-emoji">📖</span>
+            <span class="btn-title">STUDY</span>
+          </div>
+          <div class="btn-subtext">Pretend to study diligently</div>
+          <div class="btn-effects-row">
+            <span class="tag tag-good">👀 Suspicion -5</span>
+            <span class="tag tag-cost">🧠 -2</span>
+            <span class="tag tag-cost">😴 -3</span>
+          </div>
+        </button>
+
+        <!-- Action 2: SLEEP -->
+        <button id="btn-sleep" class="game-action-btn btn-sleep" aria-label="Sleep: Energy +10, Sanity +5, Suspicion +15">
+          <div class="btn-top">
+            <span class="btn-emoji">💤</span>
+            <span class="btn-title">SLEEP</span>
+          </div>
+          <div class="btn-subtext">Put your head down for a nap</div>
+          <div class="btn-effects-row">
+            <span class="tag tag-good">😴 Energy +10</span>
+            <span class="tag tag-good">🧠 Sanity +5</span>
+            <span class="tag tag-bad">👀 Suspicion +15</span>
+          </div>
+        </button>
+
+        <!-- Action 3: USE PHONE -->
+        <button id="btn-phone" class="game-action-btn btn-phone" aria-label="Use Phone: Sanity +8, Suspicion +25">
+          <div class="btn-top">
+            <span class="btn-emoji">📱</span>
+            <span class="btn-title">USE PHONE</span>
+          </div>
+          <div class="btn-subtext">Secretly scroll memes under desk</div>
+          <div class="btn-effects-row">
+            <span class="tag tag-good">🧠 Sanity +8</span>
+            <span class="tag tag-bad">👀 Suspicion +25</span>
+          </div>
+        </button>
+
+        <!-- Action 4: LOOK BUSY -->
+        <button id="btn-look-busy" class="game-action-btn btn-busy" aria-label="Look Busy: Suspicion -3, Sanity +2, Random risk">
+          <div class="btn-top">
+            <span class="btn-emoji">💻</span>
+            <span class="btn-title">LOOK BUSY</span>
+          </div>
+          <div class="btn-subtext">Furious typing on laptop</div>
+          <div class="btn-effects-row">
+            <span class="tag tag-good">👀 Suspicion -3</span>
+            <span class="tag tag-good">🧠 Sanity +2</span>
+            <span class="tag tag-warn">⚠️ Risk Notice</span>
+          </div>
+        </button>
+
+      </div>
+    </nav>
+
+    <!-- ================= MODALS & POPUPS ================= -->
+
+    <!-- Random Event Slide-in Card Modal -->
+    <dialog id="event-dialog" class="game-modal event-modal" aria-labelledby="event-title">
+      <div class="modal-card">
+        <div class="modal-header event-theme-header">
+          <div class="event-badge-label">
+            <span id="event-icon" class="event-icon">⚡</span>
+            <span id="event-type-tag" class="event-tag">CLASSROOM INCIDENT</span>
+          </div>
+          <div id="event-timer-container" class="event-timer-box hidden">
+            <span class="timer-warning">HURRY: </span>
+            <span id="event-countdown" class="event-countdown-sec">5s</span>
+            <div class="event-timer-bar-bg">
+              <div id="event-timer-bar" class="event-timer-bar-fill"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-body">
+          <h2 id="event-title" class="event-headline">Professor suddenly asks a question!</h2>
+          <p id="event-description" class="event-desc-text">
+            Professor Verma turns directly toward your bench with chalk in hand. "Roll 42, explain Boyce-Codd Normal Form right now!"
+          </p>
+
+          <div id="event-choices-list" class="event-choices-grid">
+            <!-- Dynamic choice buttons inserted here via JS -->
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- CAUGHT 💀 Professor Confrontation Modal -->
+    <dialog id="caught-dialog" class="game-modal caught-modal" aria-labelledby="caught-title">
+      <div class="modal-card caught-card">
+        <div class="caught-banner">
+          <span class="skull-icon">💀</span>
+          <h1 id="caught-title" class="caught-headline">CAUGHT 💀</h1>
+        </div>
+
+        <div class="caught-content">
+          <div class="prof-dialogue-box">
+            <div class="prof-avatar-circle">
+              <span class="prof-face-art">👨‍🏫</span>
+            </div>
+            <div class="dialogue-speech">
+              <div class="dialogue-speaker">PROFESSOR VERMA:</div>
+              <p class="dialogue-quote">“Very interesting. What exactly are you doing back here?”</p>
+            </div>
+          </div>
+
+          <p class="caught-instruction">Choose your defense carefully. One mistake and you are cooked.</p>
+
+          <div class="caught-choices-column">
+            <button id="caught-choice-1" class="caught-btn btn-defense">
+              <span class="choice-tag">DEFENSE A</span>
+              <span class="choice-text">“Taking notes, sir.”</span>
+              <span class="chance-tag chance-low">Low Chance (25%)</span>
+            </button>
+
+            <button id="caught-choice-2" class="caught-btn btn-defense">
+              <span class="choice-tag">DEFENSE B</span>
+              <span class="choice-text">“Nothing, sir.”</span>
+              <span class="chance-tag chance-mid">Medium Chance (40%)</span>
+            </button>
+
+            <button id="caught-choice-3" class="caught-btn btn-defense">
+              <span class="choice-tag">DEFENSE C</span>
+              <span class="choice-text">“I was checking the time.”</span>
+              <span class="chance-tag chance-high-fail">High Risk (10%)</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Results Screen: SUCCESS (CLASS SURVIVED 🎉) -->
+    <dialog id="success-dialog" class="game-modal outcome-modal" aria-labelledby="success-title">
+      <div class="modal-card outcome-card success-card">
+        <div class="outcome-header">
+          <span class="outcome-badge">BELL RINGS 🔔</span>
+          <h1 id="success-title" class="outcome-title success-color">CLASS SURVIVED 🎉</h1>
+          <p class="outcome-subtitle">11:35 AM &middot; The 5-minute ordeal is finally over!</p>
+        </div>
+
+        <!-- Generated Funny Player Title -->
+        <div class="player-rank-box">
+          <span class="rank-eyebrow">YOUR OFFICIAL REPUTATION:</span>
+          <div id="player-title-display" class="player-title-bold">PROFESSIONAL BACKBENCHER</div>
+          <p id="player-title-desc" class="player-title-sub">You danced on the edge of expulsion and came out untouched.</p>
+        </div>
+
+        <!-- Final Stats Grid -->
+        <div class="final-stats-grid">
+          <div class="f-stat-card">
+            <span class="f-icon">🧠</span>
+            <span class="f-label">Sanity</span>
+            <strong id="final-sanity" class="f-val">84</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">😴</span>
+            <span class="f-label">Energy</span>
+            <strong id="final-energy" class="f-val">76</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">📊</span>
+            <span class="f-label">Attendance</span>
+            <strong id="final-attendance" class="f-val">90%</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">💰</span>
+            <span class="f-label">Money</span>
+            <strong id="final-money" class="f-val">₹70</strong>
+          </div>
+          <div class="f-stat-card f-stat-suspicion">
+            <span class="f-icon">👀</span>
+            <span class="f-label">Prof Suspicion</span>
+            <strong id="final-suspicion" class="f-val">35%</strong>
+          </div>
+        </div>
+
+        <div class="outcome-actions">
+          <button id="btn-success-replay" class="primary-game-btn">
+            <span>TRY AGAIN &middot; NEW CLASS</span>
+            <span class="btn-arrow">&rarr;</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Results Screen: FAILURE (YOU GOT COOKED 💀) -->
+    <dialog id="failure-dialog" class="game-modal outcome-modal" aria-labelledby="failure-title">
+      <div class="modal-card outcome-card failure-card">
+        <div class="outcome-header">
+          <span class="outcome-badge failure-badge">EXPULSION NOTICE 📄</span>
+          <h1 id="failure-title" class="outcome-title danger-color">YOU GOT COOKED 💀</h1>
+          <p class="outcome-subtitle">Class halted &middot; Dean's office awaits</p>
+        </div>
+
+        <div class="failure-reason-box">
+          <span class="reason-label">REASON FOR DEMISE:</span>
+          <p id="failure-reason-text" class="reason-text">Professor caught you using your phone under the desk.</p>
+        </div>
+
+        <div class="final-stats-grid mini-grid">
+          <div class="f-stat-card">
+            <span class="f-icon">🧠</span>
+            <span class="f-label">Sanity</span>
+            <strong id="fail-sanity" class="f-val">0</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">😴</span>
+            <span class="f-label">Energy</span>
+            <strong id="fail-energy" class="f-val">0</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">📊</span>
+            <span class="f-label">Attendance</span>
+            <strong id="fail-attendance" class="f-val">70%</strong>
+          </div>
+          <div class="f-stat-card">
+            <span class="f-icon">👀</span>
+            <span class="f-label">Suspicion</span>
+            <strong id="fail-suspicion" class="f-val">100%</strong>
+          </div>
+        </div>
+
+        <div class="outcome-actions">
+          <button id="btn-failure-replay" class="primary-game-btn danger-btn">
+            <span>TRY AGAIN</span>
+            <span class="btn-arrow">&#x21bb;</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+    <!-- Start / Title Screen Overlay -->
+    <section id="title-screen" class="title-screen-overlay" aria-label="Game Title Screen">
+      <div class="title-container">
+        <div class="title-tag">INDIAN COLLEGE SURVIVAL SIMULATOR &middot; PROTOTYPE</div>
+        <h1 class="main-title">
+          BRO, I'M COOKED <span class="title-skull">💀</span>
+        </h1>
+        <p class="main-subtitle">Survive one normal college class.</p>
+
+        <div class="title-card-preview">
+          <div class="preview-badge">GOAL: SURVIVE 05:00 MINUTES</div>
+          <div class="preview-stats">
+            <span>🧠 Sanity 100</span>
+            <span>😴 Energy 100</span>
+            <span>📊 Attendance 85%</span>
+            <span>💰 Money ₹100</span>
+          </div>
+          <p class="preview-hint">Keep your suspicion below 100% or face Professor Verma's wrath.</p>
+        </div>
+
+        <div class="title-buttons-group">
+          <button id="btn-start-class" class="primary-game-btn big-btn">
+            <span>START CLASS</span>
+            <span class="btn-arrow">&rarr;</span>
+          </button>
+          <button id="btn-how-to-play" class="secondary-game-btn">
+            <span>HOW TO PLAY</span>
+          </button>
+        </div>
+
+        <footer class="title-footer">
+          <span>&copy; 2026 Backbencher Studios &middot; Clean Indie Prototype</span>
+        </footer>
+      </div>
+    </section>
+
+    <!-- How To Play Instructions Modal -->
+    <dialog id="how-to-play-dialog" class="game-modal guide-modal" aria-labelledby="guide-title">
+      <div class="modal-card guide-card">
+        <div class="modal-header">
+          <h2 id="guide-title" class="guide-headline">HOW TO SURVIVE CLASS</h2>
+          <button id="btn-close-guide" class="close-x-btn" aria-label="Close guide">&times;</button>
+        </div>
+
+        <div class="guide-scrollable-content">
+          <div class="guide-section">
+            <h3>🎯 The Mission</h3>
+            <p>You are trapped in a 5-minute Database Systems class. Balance your 4 vital stats and don't let <strong>Professor Suspicion</strong> reach 100%.</p>
+          </div>
+
+          <div class="guide-section">
+            <h3>🎮 Your 4 Survival Actions</h3>
+            <ul class="guide-list">
+              <li><strong>📖 STUDY:</strong> Lowers suspicion (-5), but drains sanity (-2) and energy (-3). Safe but tiring.</li>
+              <li><strong>💤 SLEEP:</strong> Restores energy (+10) and sanity (+5), but spikes suspicion (+15). Dangerous if professor looks!</li>
+              <li><strong>📱 USE PHONE:</strong> Restores sanity (+8) through memes, but causes huge suspicion (+25). High risk!</li>
+              <li><strong>💻 LOOK BUSY:</strong> Fake typing on your laptop. Lowers suspicion (-3) and gives sanity (+2), but carries a random risk of professor noticing.</li>
+            </ul>
+          </div>
+
+          <div class="guide-section">
+            <h3>👨‍🏫 Professor Behavior</h3>
+            <p>Watch the professor! When he is writing on the whiteboard, it's safer. When suspicion hits <strong>50%</strong>, he begins glancing at you. At <strong>75%</strong>, he is watching intently. At <strong>100%</strong>, you are caught!</p>
+          </div>
+
+          <div class="guide-section">
+            <h3>⚡ Random Events</h3>
+            <p>Expect sudden pop questions, attendance roll calls, WhatsApp gossip, and sleep attacks. React swiftly!</p>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btn-guide-got-it" class="primary-game-btn">
+            <span>GOT IT, LET'S SURVIVE</span>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
+  </div>
+
+  <!-- Audio Synthesizer Engine -->
+  <script src="audio.js"></script>
+  <!-- Random Events Definition & Handlers -->
+  <script src="events.js"></script>
+  <!-- Main Game Loop & State Controller -->
+  <script src="game.js"></script>
+</body>
+</html>
